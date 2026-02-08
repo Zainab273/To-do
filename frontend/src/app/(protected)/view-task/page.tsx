@@ -1,8 +1,8 @@
 'use client';
 
-import { useAuth } from '../../../hooks/useAuth';
-import { useTasks } from '../../../hooks/useTasks';
-import { formatTaskDate } from '../../../lib/utils/formatting';
+import { useAuth } from '@/hooks/useAuth';
+import { useTasks } from '@/hooks/useTasks';
+import { formatTaskDate } from '@/lib/utils/formatting';
 import { useState } from 'react';
 
 export default function ViewTaskPage() {

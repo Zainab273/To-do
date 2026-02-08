@@ -1,7 +1,7 @@
 'use client';
 
-import { Task } from '../lib/types';
-import { formatTaskDate } from '../lib/utils/formatting';
+import { Task } from '@/lib/types';
+import { formatTaskDate } from '@/lib/utils/formatting';
 import { useState } from 'react';
 
 interface TaskItemProps {

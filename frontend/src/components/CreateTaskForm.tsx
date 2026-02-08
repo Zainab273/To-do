@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { validateTaskTitle, sanitizeTaskTitle } from '../lib/utils/validation';
-import type { TaskCreateRequest } from '../lib/api/types';
+import { validateTaskTitle, sanitizeTaskTitle } from '@/lib/utils/validation';
+import type { TaskCreateRequest } from '@/lib/api/types';
 
 interface CreateTaskFormProps {
   onCreate: (data: TaskCreateRequest) => Promise<void>;
