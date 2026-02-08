@@ -1,0 +1,336 @@
+openapi: 3.0.0
+info:
+  title: Task Management API
+  version: 1.0.0
+  description: API endpoints for managing user-specific todo tasks. All endpoints require JWT authentication and enforce user data isolation.
+
+servers:
+  - url: /
+    description: Base URL for task management endpoints
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Authorization header using the Bearer scheme. Example: "Authorization: Bearer {token}"
+
+  schemas:
+    Task:
+      type: object
+      required:
+        - id
+        - title
+        - completed
+        - user_id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the task
+          example: d290f1ee-6c54-4b01-90e6-d701748f0851
+        title:
+          type: string
+          description: The title or description of the todo item
+          example: Buy groceries
+        completed:
+          type: boolean
+          description: Whether the task is completed
+          example: false
+        user_id:
+          type: string
+          format: uuid
+          description: ID of the user who owns this task
+          example: a1b2c3d4-e5f6-7890-1234-567890abcdef
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the task was created
+          example: 2026-01-01T12:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the task was last updated
+          example: 2026-01-01T12:30:00Z
+
+    TaskCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: The title of the new todo item
+          example: Plan weekend trip
+          minLength: 1
+          maxLength: 500
+
+    TaskUpdate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: The new title for the todo item
+          example: Finish report by Friday
+          minLength: 1
+          maxLength: 500
+
+    TaskToggle:
+      type: object
+      required:
+        - completed
+      properties:
+        completed:
+          type: boolean
+          description: The new completion status for the task
+          example: true
+    
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Detailed error message
+          example: Task not found
+
+paths:
+  /api/users/{user_id}/tasks:
+    parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+        description: The ID of the user who owns the tasks. Must match the authenticated user's ID.
+    get:
+      summary: List all tasks for an authenticated user
+      description: Retrieves a list of all tasks owned by the specified user. Requires JWT authentication. The user_id in the path must match the user ID from the JWT token.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized - Missing, invalid, or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - User ID in path does not match authenticated user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - User ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create a new task for an authenticated user
+      description: Creates a new task and associates it with the specified user. Requires JWT authentication. The user_id in the path must match the user ID from the JWT token.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Task successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request - e.g., task title is empty or too long
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Missing, invalid, or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - User ID in path does not match authenticated user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity - Validation error for request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/{user_id}/tasks/{task_id}:
+    parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+        description: The ID of the user who owns the task. Must match the authenticated user's ID.
+      - in: path
+        name: task_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+        description: The ID of the task to be updated or deleted.
+    patch:
+      summary: Update a task title (partially, general update)
+      description: Updates the title of a specific task. The user_id in the path must match the authenticated user's ID, and the task_id must belong to that user.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Task title successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Bad Request - e.g., task title is empty or too long
+          content:
+            application:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Missing, invalid, or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - User does not own this task or user ID mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Task ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity - Validation error for request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a specific task
+      description: Deletes a specific task. The user_id in the path must match the authenticated user's ID, and the task_id must belong to that user.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Task successfully deleted (No Content)
+        '401':
+          description: Unauthorized - Missing, invalid, or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - User does not own this task or user ID mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Task ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/{user_id}/tasks/{task_id}/toggle:
+    parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+        description: The ID of the user who owns the task. Must match the authenticated user's ID.
+      - in: path
+        name: task_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+        description: The ID of the task to toggle completion status.
+    patch:
+      summary: Toggle task completion status
+      description: Toggles the completion status of a specific task. The user_id in the path must match the authenticated user's ID, and the task_id must belong to that user.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskToggle'
+      responses:
+        '200':
+          description: Task completion status successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized - Missing, invalid, or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - User does not own this task or user ID mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Task ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity - Validation error for request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

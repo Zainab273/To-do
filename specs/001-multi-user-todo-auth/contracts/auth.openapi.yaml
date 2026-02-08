@@ -1,0 +1,153 @@
+openapi: 3.0.0
+info:
+  title: Authentication API
+  version: 1.0.0
+  description: API endpoints for user authentication (signup, signin, signout). Note that signup and signin are primarily handled by the Better Auth library on the frontend, these definitions are for documentation and reference for the backend's understanding of claims.
+
+servers:
+  - url: /
+    description: Base URL for authentication endpoints
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Authorization header using the Bearer scheme. Example: "Authorization: Bearer {token}"
+
+  schemas:
+    UserCredentials:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: User's password
+          minLength: 8
+          example: SecurePassword123
+    
+    SignupRequest:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/UserCredentials'
+      required:
+        - confirm_password
+      properties:
+        confirm_password:
+          type: string
+          format: password
+          description: Confirmation of user's password
+          minLength: 8
+          example: SecurePassword123
+
+    AuthSuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Successfully authenticated
+        access_token:
+          type: string
+          description: JWT Access Token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        token_type:
+          type: string
+          example: bearer
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Detailed error message
+          example: Invalid credentials
+
+paths:
+  /auth/signup:
+    post:
+      summary: Register a new user
+      description: Creates a new user account. Primarily handled by Better Auth on the frontend.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '400':
+          description: Bad Request - e.g., password mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity - e.g., invalid email, password not meeting requirements, email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/signin:
+    post:
+      summary: Authenticate user
+      description: Authenticates a user and issues a JWT token. Primarily handled by Better Auth on the frontend.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCredentials'
+      responses:
+        '200':
+          description: User successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '401':
+          description: Unauthorized - Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/signout:
+    post:
+      summary: Sign out user
+      description: Invalidates the user's session (frontend clears token). No backend action needed for stateless JWT.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User successfully signed out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Successfully signed out
+        '401':
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

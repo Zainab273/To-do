@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 255, 255, 255; /* Changed to white for visibility on black background */
+  --background-start-rgb: 0, 0, 0;    /* Full black */
+  --background-end-rgb: 0, 0, 0;      /* Full black */
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb)); /* Solid black background */
+}
